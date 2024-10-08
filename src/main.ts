@@ -8,7 +8,7 @@ import parseCommand from './cmd.js';
 const execPromise = util.promisify(childProcess.exec);
 
 async function main(): Promise<void> {
-  await execPromise('chcp 65001');
+  process.platform === 'win32' ? await execPromise('chcp 65001') : null;
   await parseCommand();
 }
 

@@ -9,8 +9,12 @@ import downloadUtils from './utils/downloadUtils.js';
 
 async function mainCmdHandler() {
   logger.level = argvUtils.getArgv().logLevel;
-  const netshCmdRsp = await nicUtils.getNetshInfo();
-  await nicUtils.checkIsUsingTempIpv6(netshCmdRsp);
+  process.platform === 'win32'
+    ? await (async () => {
+        const netshCmdRsp = await nicUtils.getNetshInfo();
+        await nicUtils.checkIsUsingTempIpv6(netshCmdRsp);
+      })()
+    : null;
   // await downloadUtils.singleDownload(276666); 数多いやつ
   // await downloadUtils.singleDownload(1182574); 長いやつ
   // await downloadUtils.singleDownload(1030680); 小さいやつ
