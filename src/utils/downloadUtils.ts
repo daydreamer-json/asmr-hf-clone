@@ -51,6 +51,11 @@ async function singleDownload(workId: number) {
         apiDef.workInfoPruned.endpoint,
         apiDef.workInfoPruned.params,
       );
+    } catch (error) {
+      logger.error('Work info API error has occured');
+      throw error;
+    }
+    try {
       apiRsp.workFolderStructure = await apiConnectModule.apiConnect(
         apiDef.workFolderStructure.endpoint,
         apiDef.workFolderStructure.params,
@@ -107,7 +112,7 @@ async function singleDownload(workId: number) {
       activeDownloadsCount++;
       const connectionTimeStart = process.hrtime();
       (async () => {
-        let headRsp: AxiosResponse = await (async () => {
+        const headRsp: AxiosResponse = await (async () => {
           return await retry(
             async () => {
               return await axios({
@@ -136,9 +141,7 @@ async function singleDownload(workId: number) {
             totalFormatted: mathUtils.formatFileSizeFixedUnit(totalValue, 'MiB', 2).padStart(11, ' '),
           };
         };
-        // await fs.promises.mkdir(path.dirname(path.join(argvUtils.getArgv().outputDir, entryObj.path)), {
-        //   recursive: true,
-        // });
+        // await fs.promises.mkdir(path.dirname(path.join(argvUtils.getArgv().outputDir, entryObj.path)), { recursive: true });
         await fs.promises.mkdir(argvUtils.getArgv().outputDir, {
           recursive: true,
         });
@@ -146,13 +149,6 @@ async function singleDownload(workId: number) {
         const writer = fs.createWriteStream(
           path.join(argvUtils.getArgv().outputDir, entryObj.uuid + path.extname(entryObj.path)),
         );
-        const response = await axios({
-          method: 'get',
-          url: entryObj.url,
-          headers: { ...apiDefsModule.defaultApiConnectionHeader },
-          timeout: appConfig.network.timeout,
-          responseType: 'stream',
-        });
         let downloadedLength = 0;
         let subProgressBar =
           progressBar !== null
@@ -171,6 +167,26 @@ async function singleDownload(workId: number) {
                 },
               )
             : null;
+        const response: AxiosResponse = await (async () => {
+          return await retry(
+            async () => {
+              return await axios({
+                method: 'get',
+                url: entryObj.url,
+                headers: { ...apiDefsModule.defaultApiConnectionHeader },
+                timeout: appConfig.network.timeout,
+                responseType: 'stream',
+              });
+            },
+            {
+              retries: 10,
+              factor: 2,
+              minTimeout: 500,
+              maxTimeout: Infinity,
+              onRetry: (error: any, num) => {},
+            },
+          );
+        })();
         response.data.on('data', (chunk: any) => {
           downloadedLength += chunk.length;
           subProgressBar !== null ? subProgressBar.increment(chunk.length) : null;

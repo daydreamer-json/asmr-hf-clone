@@ -96,14 +96,14 @@ Updated at: **${date}**
 
 ## Works list
 
-|Create Date|ID|Title|
-|---|---|---|
+|Create Date|Release Date|ID|Title|
+|---|---|---|---|
 ${appConfigDatabase
   .getConfig()
   .map(
     (entry) =>
       // `|![Thumbnail](${entry.workInfoPruned.samCoverUrl})|${entry.workInfoPruned.create_date}|${entry.workInfoPruned.source_id}|[${entry.workInfoPruned.title}](./output/${entry.workInfoPruned.create_date}/${stringUtils.numberToRJIdString(entry.workInfoPruned.id)}/README.md)|`,
-      `|${entry.workInfoPruned.create_date}|${entry.workInfoPruned.source_id}|[${entry.workInfoPruned.title}](./output/${entry.workInfoPruned.create_date}/${stringUtils.numberToRJIdString(entry.workInfoPruned.id)}/README.md)|`,
+      `|${entry.workInfoPruned.create_date}|${entry.workInfoPruned.release}|${entry.workInfoPruned.source_id}|[${entry.workInfoPruned.title}](./output/${entry.workInfoPruned.create_date}/${stringUtils.numberToRJIdString(entry.workInfoPruned.id)}/README.md)|`,
   )
   .join('\n')};
 `;
