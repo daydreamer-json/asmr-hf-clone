@@ -84,6 +84,14 @@ ${optimizedWorkFolderStructureJson
 
 function genMdTextRoot(date: string) {
   const outputText = `---
+license: agpl-3.0
+language:
+  - ja
+tags:
+  - not-for-all-audiences
+pretty_name: ASMR Archive Dataset
+size_categories:
+  - n>1T
 viewer: false
 ---
 # ASMR Media Archive Storage

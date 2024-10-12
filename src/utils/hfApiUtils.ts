@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import readline from 'readline';
 import cliProgress from 'cli-progress';
 import { DateTime } from 'luxon';
 import * as hfHubModule from '@huggingface/hub';
@@ -9,6 +10,7 @@ import retry from 'async-retry';
 import appConfig from './config.js';
 import logger from './logger.js';
 import argvUtils from './argv.js';
+import mathUtils from './mathUtils.js';
 import waitUtils from './waitUtils.js';
 import stringUtils from './stringUtils.js';
 import * as TypesTrackEntry from '../types/TrackEntry.js';
@@ -113,6 +115,49 @@ async function uploadWorkFiles(
   await appConfigDatabase.writeConfigToFile();
 }
 
+async function getRepoSize() {
+  const credentialData = await authenticate();
+  const targetRepo: hfHubModule.RepoDesignation = {
+    type: 'dataset',
+    name: appConfig.network.hfApi.repo,
+  };
+  logger.info('Analyzing repository total size ...');
+  const list = new Array();
+  for await (const entry of hfHubModule.listFiles({
+    repo: targetRepo,
+    recursive: true,
+    accessToken: credentialData.token,
+  })) {
+    logger.trace('Data received: ' + list.push(entry));
+    readline.moveCursor(process.stdout, -1000, -1);
+  }
+  console.log('');
+  const listFiles = list.filter((obj) => obj.type !== 'directory');
+  const listFileTypes = [...new Set(listFiles.map((obj) => path.extname(obj.path).replace('.', '')))];
+  const listFileFiltered: any[] = [];
+  for (const extname of listFileTypes) {
+    listFileFiltered.push({
+      ext: extname,
+      size: mathUtils.arrayTotal(
+        listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === extname).map((obj) => obj.size),
+      ),
+      sizeFmt: mathUtils.formatFileSizeFixedUnit(
+        mathUtils.arrayTotal(
+          listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === extname).map((obj) => obj.size),
+        ),
+        'GiB',
+        2,
+      ),
+    });
+  }
+  logger.info(
+    'Total size:',
+    mathUtils.formatFileSizeFixedUnit(mathUtils.arrayTotal(listFiles.map((obj) => obj.size)), 'GiB', 2),
+  );
+  console.table(listFileFiltered.sort((a, b) => b.size - a.size));
+  console.log(listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === 'avi').map((obj) => obj.path));
+}
+
 async function test() {
   const credentialData = await authenticate();
   logger.debug('Running listDatasets ...');
@@ -154,5 +199,6 @@ async function test() {
 export default {
   authenticate,
   uploadWorkFiles,
+  getRepoSize,
   test,
 };
