@@ -102,6 +102,10 @@ All data in this repository is uploaded for **educational and research purposes 
 
 Updated at: **${date}**
 
+> [!IMPORTANT]
+> This repository contains **many terabytes** of files.  
+> Git LFS consumes twice as much disk space because of the way it works, so \`git clone\` is not recommended. [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) or [Python libraries](https://huggingface.co/docs/huggingface_hub/index) allow you to select and download only a subset of files.
+
 ## Works list
 
 |Create Date|Release Date|ID|Title|
