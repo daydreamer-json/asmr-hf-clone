@@ -155,7 +155,7 @@ async function getRepoSize() {
     mathUtils.formatFileSizeFixedUnit(mathUtils.arrayTotal(listFiles.map((obj) => obj.size)), 'GiB', 2),
   );
   console.table(listFileFiltered.sort((a, b) => b.size - a.size));
-  console.log(listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === 'avi').map((obj) => obj.path));
+  // console.log(listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === 'avi').map((obj) => obj.path));
 }
 
 async function test() {

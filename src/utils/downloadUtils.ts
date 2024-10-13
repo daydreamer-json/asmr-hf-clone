@@ -261,6 +261,7 @@ async function singleDownload(workId: number) {
         }
       } catch (error: any) {
         if (error.status && error.status === 404) {
+        } else if (error.message.includes('maxContentLength size of -1 exceeded')) {
         } else {
           throw error;
         }
@@ -286,6 +287,7 @@ async function singleDownload(workId: number) {
         }
       } catch (error: any) {
         if (error.status && error.status === 404) {
+        } else if (error.message.includes('maxContentLength size of -1 exceeded')) {
         } else {
           throw error;
         }
@@ -309,6 +311,7 @@ async function singleDownload(workId: number) {
         }
       } catch (error: any) {
         if (error.status && error.status === 404) {
+        } else if (error.message.includes('maxContentLength size of -1 exceeded')) {
         } else {
           throw error;
         }
