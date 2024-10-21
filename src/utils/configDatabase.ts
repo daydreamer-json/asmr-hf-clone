@@ -4,7 +4,6 @@ import * as TypesTrackEntry from '../types/TrackEntry.js';
 
 const initDatabaseData: Array<{
   workInfoPruned: any;
-  workFolderStructure: TypesTrackEntry.TypeModifiedTrackEntry[];
   date: string;
 }> = [];
 
@@ -25,13 +24,11 @@ if ((await fileExistsCheck('config/database.json')) === false) {
 let database = await (async (): Promise<
   Array<{
     workInfoPruned: any;
-    workFolderStructure: TypesTrackEntry.TypeModifiedTrackEntry[];
     date: string;
   }>
 > => {
   const tmpObj: Array<{
     workInfoPruned: any;
-    workFolderStructure: TypesTrackEntry.TypeModifiedTrackEntry[];
     date: string;
   }> = JSON.parse(await fs.promises.readFile('config/database.json', 'utf-8'));
   return tmpObj;
@@ -42,13 +39,12 @@ export default {
   setConfig: (
     newValue: Array<{
       workInfoPruned: any;
-      workFolderStructure: TypesTrackEntry.TypeModifiedTrackEntry[];
       date: string;
     }>,
   ) => {
     database = newValue;
   },
   writeConfigToFile: async () => {
-    await fs.promises.writeFile('config/database.json', JSON.stringify(database, null, '  '), 'utf-8');
+    await fs.promises.writeFile('config/database.json', JSON.stringify(database), 'utf-8');
   },
 };

@@ -47,7 +47,13 @@ async function uploadWorkFiles(
     name: appConfig.network.hfApi.repo,
   };
   logger.info('Uploading work:', metadataJson.workInfoPruned.id, '...');
-  appConfigDatabase.setConfig([...appConfigDatabase.getConfig(), metadataJson]);
+  appConfigDatabase.setConfig([
+    ...appConfigDatabase.getConfig(),
+    {
+      workInfoPruned: metadataJson.workInfoPruned,
+      date: metadataJson.date,
+    },
+  ]);
   await retry(
     async () => {
       await hfHubModule.uploadFiles({
@@ -57,7 +63,7 @@ async function uploadWorkFiles(
         files: [
           {
             path: 'database.json',
-            content: new Blob([JSON.stringify(appConfigDatabase.getConfig(), null, '  ')], {
+            content: new Blob([JSON.stringify(appConfigDatabase.getConfig())], {
               type: 'application/json',
             }),
           },
