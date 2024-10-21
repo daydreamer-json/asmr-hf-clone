@@ -30,7 +30,12 @@ let database = await (async (): Promise<
   const tmpObj: Array<{
     workInfoPruned: any;
     date: string;
-  }> = JSON.parse(await fs.promises.readFile('config/database.json', 'utf-8'));
+  }> = JSON.parse(await fs.promises.readFile('config/database.json', 'utf-8')).map(
+    (obj: { workInfoPruned: any; workFolderStructure?: any; date: any }) => ({
+      workInfoPruned: obj.workInfoPruned,
+      date: obj.date,
+    }),
+  );
   return tmpObj;
 })();
 
