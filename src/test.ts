@@ -18,7 +18,7 @@ async function mainCmdHandler() {
   // await downloadUtils.singleDownload(276666); 数多いやつ
   // await downloadUtils.singleDownload(1182574); 長いやつ
   // await downloadUtils.singleDownload(1030680); 小さいやつ
-  const downloadList = [1067550];
+  const downloadList = [1092551];
   for (const downloadWorkId of downloadList) {
     await downloadUtils.singleDownload(downloadWorkId);
   }

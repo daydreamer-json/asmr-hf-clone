@@ -2,6 +2,7 @@ output/
 memo/
 config/database.json
 config/config.json
+config/*.zst
 
 ##########################################
 

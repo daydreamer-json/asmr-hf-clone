@@ -328,12 +328,12 @@ async function singleDownload(workId: number) {
         JSON.stringify(metadataJson, null, '  '),
         { flag: 'w', encoding: 'utf8' },
       );
-      logger.debug('Writing markdown file ...');
-      await fs.promises.writeFile(
-        path.join(argvUtils.getArgv().outputDir, 'README.md'),
-        markdownUtils.genMdTextSingleWork(metadataJson, optimizedWorkFolderStructureJson),
-        { flag: 'w', encoding: 'utf8' },
-      );
+      // logger.debug('Writing markdown file ...');
+      // await fs.promises.writeFile(
+      //   path.join(argvUtils.getArgv().outputDir, 'README.md'),
+      //   markdownUtils.genMdTextSingleWork(metadataJson, optimizedWorkFolderStructureJson),
+      //   { flag: 'w', encoding: 'utf8' },
+      // );
       await hfApiUtils.uploadWorkFiles(metadataJson, optimizedWorkFolderStructureJson, isCoverAvailable);
       resolve();
     };

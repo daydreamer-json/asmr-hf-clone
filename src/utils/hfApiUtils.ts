@@ -7,6 +7,7 @@ import { DateTime } from 'luxon';
 import * as hfHubModule from '@huggingface/hub';
 import { pathToFileURL } from 'url';
 import retry from 'async-retry';
+import { compress as zstdCompress } from '@mongodb-js/zstd';
 import appConfig from './config.js';
 import logger from './logger.js';
 import argvUtils from './argv.js';
@@ -51,6 +52,7 @@ async function uploadWorkFiles(
     ...appConfigDatabase.getConfig(),
     {
       workInfoPruned: metadataJson.workInfoPruned,
+      workFolderStructure: metadataJson.workFolderStructure,
       date: metadataJson.date,
     },
   ]);
@@ -62,21 +64,24 @@ async function uploadWorkFiles(
         commitTitle: `${metadataJson.workInfoPruned.create_date}_${stringUtils.numberToRJIdString(metadataJson.workInfoPruned.id)}`,
         files: [
           {
-            path: 'database.json',
-            content: new Blob([JSON.stringify(appConfigDatabase.getConfig())], {
-              type: 'application/json',
-            }),
+            path: 'database.json.zst',
+            content: new Blob(
+              [await zstdCompress(Buffer.from(JSON.stringify(appConfigDatabase.getConfig()), 'utf-8'), 14)],
+              {
+                type: 'application/zstd',
+              },
+            ),
           },
-          {
-            path: 'README.md',
-            content: new Blob([markdownUtils.genMdTextRoot(metadataJson.date)], { type: 'text/markdown' }),
-          },
+          // {
+          //   path: 'README.md',
+          //   content: new Blob([markdownUtils.genMdTextRoot(metadataJson.date)], { type: 'text/markdown' }),
+          // },
           ...(() => {
             const coverFiles = new Array();
             isCoverAvailable.main ? coverFiles.push('cover_main.jpg') : null;
             isCoverAvailable.small ? coverFiles.push('cover_small.jpg') : null;
             isCoverAvailable.thumb ? coverFiles.push('cover_thumb.jpg') : null;
-            const metaFiles = ['README.md', 'metadata.json', ...coverFiles];
+            const metaFiles = ['metadata.json', ...coverFiles];
             const arr = new Array();
             metaFiles.forEach((fn) => {
               arr.push({
