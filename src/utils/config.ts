@@ -17,6 +17,9 @@ type ConfigType = AllRequired<
         token: string;
         repo: string;
       };
+      cloudflareApi: {
+        pageDeployHookUrl: string;
+      };
       asmrApi: {
         baseDomain: {
           latest: string;

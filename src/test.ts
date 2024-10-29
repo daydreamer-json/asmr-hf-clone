@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-
+import ky from 'ky';
 import appConfig from './utils/config.js';
 import argvUtils from './utils/argv.js';
 import logger from './utils/logger.js';
@@ -18,9 +18,19 @@ async function mainCmdHandler() {
   // await downloadUtils.singleDownload(276666); 数多いやつ
   // await downloadUtils.singleDownload(1182574); 長いやつ
   // await downloadUtils.singleDownload(1030680); 小さいやつ
-  const downloadList = [1092551];
+  const downloadList = [0];
+  let lastCloudflareDeployTime = 0;
   for (const downloadWorkId of downloadList) {
     await downloadUtils.singleDownload(downloadWorkId);
+    if (DateTime.now().toSeconds() - lastCloudflareDeployTime > 180) {
+      logger.debug('Sending POST request to Cloudflare ...');
+      await ky(appConfig.network.cloudflareApi.pageDeployHookUrl, {
+        method: 'post',
+        retry: 0,
+        timeout: 20000,
+      });
+      lastCloudflareDeployTime = DateTime.now().toSeconds();
+    }
   }
 }
 

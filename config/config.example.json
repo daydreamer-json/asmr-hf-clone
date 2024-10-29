@@ -7,6 +7,9 @@
       "token": "hf_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh",
       "repo": "user-name/repo-name"
     },
+    "cloudflareApi": {
+      "pageDeployHookUrl": "https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/ABCDEGH-IJKL-MNOP-QRST-UVWXYZabcdef"
+    },
     "asmrApi": {
       "baseDomain": {
         "latest": "api.asmr-200.com",

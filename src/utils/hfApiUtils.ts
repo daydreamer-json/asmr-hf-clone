@@ -149,6 +149,7 @@ async function getRepoSize() {
   for (const extname of listFileTypes) {
     listFileFiltered.push({
       ext: extname,
+      count: listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === extname).length,
       size: mathUtils.arrayTotal(
         listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === extname).map((obj) => obj.size),
       ),
