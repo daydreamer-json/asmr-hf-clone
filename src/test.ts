@@ -26,7 +26,7 @@ async function mainCmdHandler() {
       logger.debug('Sending POST request to Cloudflare ...');
       await ky(appConfig.network.cloudflareApi.pageDeployHookUrl, {
         method: 'post',
-        retry: 0,
+        retry: 10,
         timeout: 20000,
       });
       lastCloudflareDeployTime = DateTime.now().toSeconds();
