@@ -10,6 +10,9 @@
     "cloudflareApi": {
       "pageDeployHookUrl": "https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/ABCDEGH-IJKL-MNOP-QRST-UVWXYZabcdef"
     },
+    "discordApi": {
+      "webhookUrl": ["https://discord.com/api/webhooks/12345678/ABC"]
+    },
     "asmrApi": {
       "baseDomain": {
         "latest": "api.asmr-200.com",

@@ -18,6 +18,7 @@ import hfApiUtils from './hfApiUtils.js';
 import markdownUtils from './markdownUtils.js';
 import appConfigDatabase from './configDatabase.js';
 import retry from 'async-retry';
+import webhookUtils from './webhookUtils.js';
 
 async function healthCheck() {
   logger.debug('Checking API health ...');
@@ -335,6 +336,7 @@ async function singleDownload(workId: number) {
       //   { flag: 'w', encoding: 'utf8' },
       // );
       await hfApiUtils.uploadWorkFiles(metadataJson, optimizedWorkFolderStructureJson, isCoverAvailable);
+      await webhookUtils.sendDiscordWebhook(metadataJson.workInfoPruned);
       resolve();
     };
   });

@@ -20,6 +20,9 @@ type ConfigType = AllRequired<
       cloudflareApi: {
         pageDeployHookUrl: string;
       };
+      discordApi: {
+        webhookUrl: Array<string>;
+      };
       asmrApi: {
         baseDomain: {
           latest: string;
