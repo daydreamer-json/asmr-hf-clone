@@ -22,7 +22,7 @@ async function mainCmdHandler() {
   let lastCloudflareDeployTime = 0;
   let lastStatsMetaUploadTime = 0;
   let triggerTimeCloudflareDeploy = 180;
-  let triggerTimeStatsMetaUpload = 300;
+  let triggerTimeStatsMetaUpload = 900;
   for (const downloadWorkId of downloadList) {
     await downloadUtils.singleDownload(downloadWorkId);
     if (DateTime.now().toSeconds() - lastCloudflareDeployTime > triggerTimeCloudflareDeploy) {
