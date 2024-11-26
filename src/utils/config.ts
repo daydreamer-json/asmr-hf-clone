@@ -16,6 +16,7 @@ type ConfigType = AllRequired<
       hfApi: {
         token: string;
         repo: string;
+        repoMeta: string;
       };
       cloudflareApi: {
         pageDeployHookUrl: string;

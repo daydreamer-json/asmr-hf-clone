@@ -139,13 +139,13 @@ async function getRepoSize() {
     recursive: true,
     accessToken: credentialData.token,
   })) {
-    logger.trace('Data received: ' + list.push(entry));
-    readline.moveCursor(process.stdout, -1000, -1);
+    argvUtils.getArgv().noShowProgress === true ? list.push(entry) : logger.trace('Data received: ' + list.push(entry));
+    argvUtils.getArgv().noShowProgress === true ? null : readline.moveCursor(process.stdout, -1000, -1);
   }
-  console.log('');
+  argvUtils.getArgv().noShowProgress === true ? null : console.log('');
   const listFiles = list.filter((obj) => obj.type !== 'directory');
   const listFileTypes = [...new Set(listFiles.map((obj) => path.extname(obj.path).replace('.', '')))];
-  const listFileFiltered: any[] = [];
+  const listFileFiltered = [];
   for (const extname of listFileTypes) {
     listFileFiltered.push({
       ext: extname,
@@ -162,12 +162,71 @@ async function getRepoSize() {
       ),
     });
   }
+  logger.info('Total entry:', listFiles.length);
   logger.info(
-    'Total size:',
+    'Total size :',
     mathUtils.formatFileSizeFixedUnit(mathUtils.arrayTotal(listFiles.map((obj) => obj.size)), 'GiB', 2),
   );
-  console.table(listFileFiltered.sort((a, b) => b.size - a.size));
+  argvUtils.getArgv().noShowProgress === true ? null : console.table(listFileFiltered.sort((a, b) => b.size - a.size));
   // console.log(listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === 'avi').map((obj) => obj.path));
+  return listFileFiltered
+    .sort((a, b) => b.size - a.size)
+    .map((obj) => ({
+      ext: obj.ext,
+      count: obj.count,
+      size: obj.size,
+    }));
+}
+
+async function uploadStatsMetaToHf() {
+  const credentialData = await authenticate();
+  const targetRepo: hfHubModule.RepoDesignation = {
+    type: 'dataset',
+    name: appConfig.network.hfApi.repoMeta,
+  };
+  const retRepoSize = await getRepoSize();
+  logger.debug('Uploading stats meta to meta repo ...');
+  await retry(
+    async () => {
+      await hfHubModule.uploadFiles({
+        repo: targetRepo,
+        accessToken: credentialData.token,
+        commitTitle: `Update stats meta`,
+        files: [
+          {
+            path: 'stats.json',
+            content: new Blob(
+              [
+                Buffer.from(
+                  JSON.stringify(
+                    {
+                      repoSize: retRepoSize,
+                    },
+                    null,
+                    '  ',
+                  ),
+                  'utf-8',
+                ),
+              ],
+              {
+                type: 'application/json',
+              },
+            ),
+          },
+        ],
+      });
+    },
+    {
+      retries: 10,
+      factor: 2,
+      minTimeout: 500,
+      maxTimeout: Infinity,
+      onRetry: (error, num) => {
+        console.log(error);
+        logger.error(`An upload error has occurred. Retrying (${num} times) ...`);
+      },
+    },
+  );
 }
 
 async function test() {
@@ -212,5 +271,6 @@ export default {
   authenticate,
   uploadWorkFiles,
   getRepoSize,
+  uploadStatsMetaToHf,
   test,
 };

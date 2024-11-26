@@ -20,9 +20,12 @@ async function mainCmdHandler() {
   // await downloadUtils.singleDownload(1030680); 小さいやつ
   const downloadList = [0];
   let lastCloudflareDeployTime = 0;
+  let lastStatsMetaUploadTime = 0;
+  let triggerTimeCloudflareDeploy = 180;
+  let triggerTimeStatsMetaUpload = 300;
   for (const downloadWorkId of downloadList) {
     await downloadUtils.singleDownload(downloadWorkId);
-    if (DateTime.now().toSeconds() - lastCloudflareDeployTime > 180) {
+    if (DateTime.now().toSeconds() - lastCloudflareDeployTime > triggerTimeCloudflareDeploy) {
       logger.debug('Sending POST request to Cloudflare ...');
       await ky(appConfig.network.cloudflareApi.pageDeployHookUrl, {
         method: 'post',
@@ -30,6 +33,10 @@ async function mainCmdHandler() {
         timeout: 20000,
       });
       lastCloudflareDeployTime = DateTime.now().toSeconds();
+    }
+    if (DateTime.now().toSeconds() - lastStatsMetaUploadTime > triggerTimeStatsMetaUpload) {
+      await hfApiUtils.uploadStatsMetaToHf();
+      lastStatsMetaUploadTime = DateTime.now().toSeconds();
     }
   }
 }
