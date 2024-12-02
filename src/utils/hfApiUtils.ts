@@ -17,6 +17,7 @@ import stringUtils from './stringUtils.js';
 import * as TypesTrackEntry from '../types/TrackEntry.js';
 import appConfigDatabase from './configDatabase.js';
 import markdownUtils from './markdownUtils.js';
+import tarballUtils from './tarballUtils.js';
 
 async function authenticate() {
   logger.debug('Authenticating HuggingFace account ...');
@@ -64,18 +65,34 @@ async function uploadWorkFiles(
         commitTitle: `${metadataJson.workInfoPruned.create_date}_${stringUtils.numberToRJIdString(metadataJson.workInfoPruned.id)}`,
         files: [
           {
-            path: 'database.json.zst',
+            path: 'database.tar.zst',
             content: new Blob(
-              [await zstdCompress(Buffer.from(JSON.stringify(appConfigDatabase.getConfig()), 'utf-8'), 14)],
+              [
+                await zstdCompress(
+                  await tarballUtils.createTarBuffer(
+                    (() => {
+                      const chunkArrayFunc = (array: Array<any>, chunkSize: number) => {
+                        const chunks = [];
+                        for (let i = 0; i < array.length; i += chunkSize) {
+                          chunks.push(array.slice(i, i + chunkSize));
+                        }
+                        return chunks;
+                      };
+                      return chunkArrayFunc(appConfigDatabase.getConfig(), 4096).map((obj, index) => ({
+                        path: `database.json.${index.toString().padStart(2, '0')}`,
+                        data: Buffer.from(JSON.stringify(obj), 'utf-8'),
+                        modifiedTime: null,
+                      }));
+                    })(),
+                  ),
+                  14,
+                ),
+              ],
               {
                 type: 'application/zstd',
               },
             ),
           },
-          // {
-          //   path: 'README.md',
-          //   content: new Blob([markdownUtils.genMdTextRoot(metadataJson.date)], { type: 'text/markdown' }),
-          // },
           ...(() => {
             const coverFiles = new Array();
             isCoverAvailable.main ? coverFiles.push('cover_main.jpg') : null;
