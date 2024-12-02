@@ -23,12 +23,25 @@ import webhookUtils from './webhookUtils.js';
 async function healthCheck() {
   logger.debug('Checking API health ...');
   const apiDef = apiDefsModule.apiDefs.health();
-  const apiRsp = await apiConnectModule.apiConnect(apiDef.endpoint, apiDef.params);
-  if (apiRsp === 'OK') {
-    return true;
-  } else {
-    throw new Error('API health check failed');
-  }
+  await retry(
+    async () => {
+      const apiRsp = await apiConnectModule.apiConnect(apiDef.endpoint, apiDef.params);
+      if (apiRsp === 'OK') {
+        return true;
+      } else {
+        throw new Error('API health check failed');
+      }
+    },
+    {
+      retries: 5,
+      factor: 2,
+      minTimeout: 500,
+      maxTimeout: Infinity,
+      onRetry: (error: any, num) => {
+        logger.error(`Health check error has occurred. Retrying (${num} times) ...`);
+      },
+    },
+  );
 }
 
 async function singleDownload(workId: number) {
@@ -246,14 +259,33 @@ async function singleDownload(workId: number) {
         thumb: false,
       };
       try {
-        coverRsp.main = await axios({
-          method: 'get',
-          url: apiDefsModule.apiDefs.coverImage(workId, 'main').endpoint,
-          params: apiDefsModule.apiDefs.coverImage(workId, 'main').params,
-          headers: { ...apiDefsModule.defaultApiConnectionHeader },
-          timeout: appConfig.network.timeout,
-          responseType: 'arraybuffer',
-        });
+        coverRsp.main = await retry(
+          async (bail) => {
+            try {
+              return (
+                (await axios({
+                  method: 'get',
+                  url: apiDefsModule.apiDefs.coverImage(workId, 'main').endpoint,
+                  params: apiDefsModule.apiDefs.coverImage(workId, 'main').params,
+                  headers: { ...apiDefsModule.defaultApiConnectionHeader },
+                  timeout: appConfig.network.timeout,
+                  responseType: 'arraybuffer',
+                })) ?? null
+              );
+            } catch (error: any) {
+              if (error.message.includes('maxContentLength size of -1 exceeded')) {
+                bail(error);
+              }
+            }
+          },
+          {
+            retries: 6,
+            factor: 2,
+            minTimeout: 500,
+            maxTimeout: Infinity,
+            onRetry: (error: any, num) => {},
+          },
+        );
         if (coverRsp.main) {
           await fs.promises.writeFile(path.join(argvUtils.getArgv().outputDir, 'cover_main.jpg'), coverRsp.main.data, {
             flag: 'w',
