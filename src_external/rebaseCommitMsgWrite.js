@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
-import readline from 'readline';
+// import readline from 'readline';
 
 // ファイルパスを取得
 const filePath = process.argv[2];

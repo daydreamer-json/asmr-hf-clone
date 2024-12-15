@@ -18,11 +18,12 @@ async function mainCmdHandler() {
   // await downloadUtils.singleDownload(276666); 数多いやつ
   // await downloadUtils.singleDownload(1182574); 長いやつ
   // await downloadUtils.singleDownload(1030680); 小さいやつ
+  hfApiUtils.uploadStatsMetaToHf();
   const downloadList = [0];
-  let lastCloudflareDeployTime = 0;
-  let lastStatsMetaUploadTime = 0;
   let triggerTimeCloudflareDeploy = 180;
-  let triggerTimeStatsMetaUpload = 900;
+  let triggerTimeStatsMetaUpload = 3600;
+  let lastCloudflareDeployTime = 0;
+  let lastStatsMetaUploadTime = DateTime.now().toSeconds();
   for (const downloadWorkId of downloadList) {
     await downloadUtils.singleDownload(downloadWorkId);
     if (DateTime.now().toSeconds() - lastCloudflareDeployTime > triggerTimeCloudflareDeploy) {
@@ -35,7 +36,7 @@ async function mainCmdHandler() {
       lastCloudflareDeployTime = DateTime.now().toSeconds();
     }
     if (DateTime.now().toSeconds() - lastStatsMetaUploadTime > triggerTimeStatsMetaUpload) {
-      await hfApiUtils.uploadStatsMetaToHf();
+      hfApiUtils.uploadStatsMetaToHf();
       lastStatsMetaUploadTime = DateTime.now().toSeconds();
     }
   }

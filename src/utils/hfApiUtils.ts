@@ -7,7 +7,7 @@ import { DateTime } from 'luxon';
 import * as hfHubModule from '@huggingface/hub';
 import { pathToFileURL } from 'url';
 import retry from 'async-retry';
-import { compress as zstdCompress } from '@mongodb-js/zstd';
+import zstd from '@mongodb-js/zstd';
 import appConfig from './config.js';
 import logger from './logger.js';
 import argvUtils from './argv.js';
@@ -68,7 +68,7 @@ async function uploadWorkFiles(
             path: 'database.tar.zst',
             content: new Blob(
               [
-                await zstdCompress(
+                await zstd.compress(
                   await tarballUtils.createTarBuffer(
                     (() => {
                       const chunkArrayFunc = (array: Array<any>, chunkSize: number) => {
@@ -156,8 +156,9 @@ async function getRepoSize() {
     recursive: true,
     accessToken: credentialData.token,
   })) {
-    argvUtils.getArgv().noShowProgress === true ? list.push(entry) : logger.trace('Data received: ' + list.push(entry));
-    argvUtils.getArgv().noShowProgress === true ? null : readline.moveCursor(process.stdout, -1000, -1);
+    // argvUtils.getArgv().noShowProgress === true ? list.push(entry) : logger.trace('Data received: ' + list.push(entry));
+    // argvUtils.getArgv().noShowProgress === true ? null : readline.moveCursor(process.stdout, -1000, -1);
+    list.push(entry);
   }
   argvUtils.getArgv().noShowProgress === true ? null : console.log('');
   const listFiles = list.filter((obj) => obj.type !== 'directory');
@@ -177,6 +178,7 @@ async function getRepoSize() {
         'GiB',
         2,
       ),
+      sizeEntry: listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === extname).map((obj) => obj.size),
     });
   }
   logger.info('Total entry:', listFiles.length);
@@ -184,7 +186,18 @@ async function getRepoSize() {
     'Total size :',
     mathUtils.formatFileSizeFixedUnit(mathUtils.arrayTotal(listFiles.map((obj) => obj.size)), 'GiB', 2),
   );
-  argvUtils.getArgv().noShowProgress === true ? null : console.table(listFileFiltered.sort((a, b) => b.size - a.size));
+  argvUtils.getArgv().noShowProgress === true
+    ? null
+    : console.table(
+        listFileFiltered
+          .map((obj) => ({
+            ext: obj.ext,
+            count: obj.count,
+            size: obj.size,
+            sizeFmt: obj.sizeFmt,
+          }))
+          .sort((a, b) => b.size - a.size),
+      );
   // console.log(listFiles.filter((obj) => path.extname(obj.path).replace('.', '') === 'avi').map((obj) => obj.path));
   return listFileFiltered
     .sort((a, b) => b.size - a.size)
@@ -192,6 +205,7 @@ async function getRepoSize() {
       ext: obj.ext,
       count: obj.count,
       size: obj.size,
+      sizeEntry: obj.sizeEntry,
     }));
 }
 
@@ -211,22 +225,25 @@ async function uploadStatsMetaToHf() {
         commitTitle: `Update stats meta`,
         files: [
           {
-            path: 'stats.json',
+            path: 'stats.json.zst',
             content: new Blob(
               [
-                Buffer.from(
-                  JSON.stringify(
-                    {
-                      repoSize: retRepoSize,
-                    },
-                    null,
-                    '  ',
+                await zstd.compress(
+                  Buffer.from(
+                    JSON.stringify(
+                      {
+                        repoSize: retRepoSize,
+                      },
+                      null,
+                      '  ',
+                    ),
+                    'utf-8',
                   ),
-                  'utf-8',
+                  18,
                 ),
               ],
               {
-                type: 'application/json',
+                type: 'application/zstd',
               },
             ),
           },

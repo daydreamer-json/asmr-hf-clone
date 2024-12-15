@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import cliProgress from 'cli-progress';
 import { DateTime } from 'luxon';
 import axios, { AxiosResponse } from 'axios';
+import ky from 'ky';
 import appConfig from './config.js';
 import logger from './logger.js';
 import argvUtils from './argv.js';
@@ -19,6 +20,7 @@ import markdownUtils from './markdownUtils.js';
 import appConfigDatabase from './configDatabase.js';
 import retry from 'async-retry';
 import webhookUtils from './webhookUtils.js';
+import stringUtils from './stringUtils.js';
 
 async function healthCheck() {
   logger.debug('Checking API health ...');
@@ -48,22 +50,36 @@ async function singleDownload(workId: number) {
       workFolderStructure: null,
     };
     try {
-      apiRsp.workInfoPruned = await apiConnectModule.apiConnect(
-        apiDef.workInfoPruned.endpoint,
-        apiDef.workInfoPruned.params,
-      );
+      apiRsp.workInfoPruned = await ky(
+        stringUtils.pathQueryToUrl(apiDef.workInfoPruned.endpoint, apiDef.workInfoPruned.params),
+        {
+          method: 'get',
+          headers: { ...apiDefsModule.defaultApiConnectionHeader },
+          retry: 10,
+          timeout: 20000,
+        },
+      ).json();
     } catch (error) {
       logger.error('Work info API error has occured');
       throw error;
     }
     try {
-      apiRsp.workFolderStructure = await apiConnectModule.apiConnect(
-        apiDef.workFolderStructure.endpoint,
-        apiDef.workFolderStructure.params,
-      );
-    } catch (error) {
-      logger.warn('File structure not found. Skipped');
-      return resolve();
+      apiRsp.workFolderStructure = await ky(
+        stringUtils.pathQueryToUrl(apiDef.workFolderStructure.endpoint, apiDef.workFolderStructure.params),
+        {
+          method: 'get',
+          headers: { ...apiDefsModule.defaultApiConnectionHeader },
+          retry: 10,
+          timeout: 20000,
+        },
+      ).json();
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        logger.warn('File structure not found. Skipped');
+        return resolve();
+      } else {
+        throw error;
+      }
     }
     const modifiedWorkFolderStructureJson = modifyWorkFolderStructureJson(apiRsp.workFolderStructure, '');
     const optimizedWorkFolderStructureJson = optimizeWorkFolderStructureJson(modifiedWorkFolderStructureJson, '');
@@ -231,9 +247,9 @@ async function singleDownload(workId: number) {
       progressBar !== null ? progressBar.stop() : null;
       logger.debug('Downloading cover image ...');
       type coverRspTempType = {
-        main: AxiosResponse | null;
-        small: AxiosResponse | null;
-        thumb: AxiosResponse | null;
+        main: AxiosResponse | ArrayBuffer | null;
+        small: AxiosResponse | ArrayBuffer | null;
+        thumb: AxiosResponse | ArrayBuffer | null;
       };
       const coverRsp: coverRspTempType = {
         main: null,
@@ -245,41 +261,51 @@ async function singleDownload(workId: number) {
         small: false,
         thumb: false,
       };
+      //! ================================================================
+      //! cover画像の取得をkyに置き換えているセクション。WIP
       try {
-        coverRsp.main = await axios({
-          method: 'get',
-          url: apiDefsModule.apiDefs.coverImage(workId, 'main').endpoint,
-          params: apiDefsModule.apiDefs.coverImage(workId, 'main').params,
-          headers: { ...apiDefsModule.defaultApiConnectionHeader },
-          timeout: appConfig.network.timeout,
-          responseType: 'arraybuffer',
-        });
+        coverRsp.main = await ky(
+          stringUtils.pathQueryToUrl(
+            apiDefsModule.apiDefs.coverImage(workId, 'main').endpoint,
+            apiDefsModule.apiDefs.coverImage(workId, 'main').params,
+          ),
+          {
+            method: 'get',
+            headers: { ...apiDefsModule.defaultApiConnectionHeader },
+            retry: 10,
+            timeout: 20000,
+          },
+        ).arrayBuffer();
         if (coverRsp.main) {
-          await fs.promises.writeFile(path.join(argvUtils.getArgv().outputDir, 'cover_main.jpg'), coverRsp.main.data, {
-            flag: 'w',
-          });
+          await fs.promises.writeFile(
+            path.join(argvUtils.getArgv().outputDir, 'cover_main.jpg'),
+            Buffer.from(coverRsp.main),
+            {
+              flag: 'w',
+            },
+          );
           isCoverAvailable.main = true;
         }
       } catch (error: any) {
-        if (error.status && error.status === 404) {
-        } else if (error.message.includes('maxContentLength size of -1 exceeded')) {
-        } else {
-          throw error;
-        }
+        if (error.cause && error.cause.code !== 'UND_ERR_SOCKET') throw error;
       }
       try {
-        coverRsp.small = await axios({
-          method: 'get',
-          url: apiDefsModule.apiDefs.coverImage(workId, '240x240').endpoint,
-          params: apiDefsModule.apiDefs.coverImage(workId, '240x240').params,
-          headers: { ...apiDefsModule.defaultApiConnectionHeader },
-          timeout: appConfig.network.timeout,
-          responseType: 'arraybuffer',
-        });
+        coverRsp.small = await ky(
+          stringUtils.pathQueryToUrl(
+            apiDefsModule.apiDefs.coverImage(workId, '240x240').endpoint,
+            apiDefsModule.apiDefs.coverImage(workId, '240x240').params,
+          ),
+          {
+            method: 'get',
+            headers: { ...apiDefsModule.defaultApiConnectionHeader },
+            retry: 10,
+            timeout: 20000,
+          },
+        ).arrayBuffer();
         if (coverRsp.small) {
           await fs.promises.writeFile(
             path.join(argvUtils.getArgv().outputDir, 'cover_small.jpg'),
-            coverRsp.small.data,
+            Buffer.from(coverRsp.small),
             {
               flag: 'w',
             },
@@ -287,36 +313,108 @@ async function singleDownload(workId: number) {
           isCoverAvailable.small = true;
         }
       } catch (error: any) {
-        if (error.status && error.status === 404) {
-        } else if (error.message.includes('maxContentLength size of -1 exceeded')) {
-        } else {
-          throw error;
-        }
+        if (error.cause && error.cause.code !== 'UND_ERR_SOCKET') throw error;
       }
       try {
-        coverRsp.thumb = await axios({
-          method: 'get',
-          url: apiDefsModule.apiDefs.coverImage(workId, 'sam').endpoint,
-          params: apiDefsModule.apiDefs.coverImage(workId, 'sam').params,
-          headers: { ...apiDefsModule.defaultApiConnectionHeader },
-          timeout: appConfig.network.timeout,
-          responseType: 'arraybuffer',
-        });
+        coverRsp.thumb = await ky(
+          stringUtils.pathQueryToUrl(
+            apiDefsModule.apiDefs.coverImage(workId, 'sam').endpoint,
+            apiDefsModule.apiDefs.coverImage(workId, 'sam').params,
+          ),
+          {
+            method: 'get',
+            headers: { ...apiDefsModule.defaultApiConnectionHeader },
+            retry: 10,
+            timeout: 20000,
+          },
+        ).arrayBuffer();
         if (coverRsp.thumb) {
           await fs.promises.writeFile(
             path.join(argvUtils.getArgv().outputDir, 'cover_thumb.jpg'),
-            coverRsp.thumb.data,
-            { flag: 'w' },
+            Buffer.from(coverRsp.thumb),
+            {
+              flag: 'w',
+            },
           );
           isCoverAvailable.thumb = true;
         }
       } catch (error: any) {
-        if (error.status && error.status === 404) {
-        } else if (error.message.includes('maxContentLength size of -1 exceeded')) {
-        } else {
-          throw error;
-        }
+        if (error.cause && error.cause.code !== 'UND_ERR_SOCKET') throw error;
       }
+
+      //! ================================================================
+      // try {
+      //   coverRsp.main = await axios({
+      //     method: 'get',
+      //     url: apiDefsModule.apiDefs.coverImage(workId, 'main').endpoint,
+      //     params: apiDefsModule.apiDefs.coverImage(workId, 'main').params,
+      //     headers: { ...apiDefsModule.defaultApiConnectionHeader },
+      //     timeout: appConfig.network.timeout,
+      //     responseType: 'arraybuffer',
+      //   });
+      //   if (coverRsp.main) {
+      //     await fs.promises.writeFile(path.join(argvUtils.getArgv().outputDir, 'cover_main.jpg'), coverRsp.main.data, {
+      //       flag: 'w',
+      //     });
+      //     isCoverAvailable.main = true;
+      //   }
+      // } catch (error: any) {
+      //   if (error.status && error.status === 404) {
+      //   } else if (error.message.includes('maxContentLength size of -1 exceeded')) {
+      //   } else {
+      //     throw error;
+      //   }
+      // }
+      // try {
+      //   coverRsp.small = await axios({
+      //     method: 'get',
+      //     url: apiDefsModule.apiDefs.coverImage(workId, '240x240').endpoint,
+      //     params: apiDefsModule.apiDefs.coverImage(workId, '240x240').params,
+      //     headers: { ...apiDefsModule.defaultApiConnectionHeader },
+      //     timeout: appConfig.network.timeout,
+      //     responseType: 'arraybuffer',
+      //   });
+      //   if (coverRsp.small) {
+      //     await fs.promises.writeFile(
+      //       path.join(argvUtils.getArgv().outputDir, 'cover_small.jpg'),
+      //       coverRsp.small.data,
+      //       {
+      //         flag: 'w',
+      //       },
+      //     );
+      //     isCoverAvailable.small = true;
+      //   }
+      // } catch (error: any) {
+      //   if (error.status && error.status === 404) {
+      //   } else if (error.message.includes('maxContentLength size of -1 exceeded')) {
+      //   } else {
+      //     throw error;
+      //   }
+      // }
+      // try {
+      //   coverRsp.thumb = await axios({
+      //     method: 'get',
+      //     url: apiDefsModule.apiDefs.coverImage(workId, 'sam').endpoint,
+      //     params: apiDefsModule.apiDefs.coverImage(workId, 'sam').params,
+      //     headers: { ...apiDefsModule.defaultApiConnectionHeader },
+      //     timeout: appConfig.network.timeout,
+      //     responseType: 'arraybuffer',
+      //   });
+      //   if (coverRsp.thumb) {
+      //     await fs.promises.writeFile(
+      //       path.join(argvUtils.getArgv().outputDir, 'cover_thumb.jpg'),
+      //       coverRsp.thumb.data,
+      //       { flag: 'w' },
+      //     );
+      //     isCoverAvailable.thumb = true;
+      //   }
+      // } catch (error: any) {
+      //   if (error.status && error.status === 404) {
+      //   } else if (error.message.includes('maxContentLength size of -1 exceeded')) {
+      //   } else {
+      //     throw error;
+      //   }
+      // }
       logger.info('Download completed:', workId);
       logger.debug('Writing metadata json ...');
       const metadataJson = {
