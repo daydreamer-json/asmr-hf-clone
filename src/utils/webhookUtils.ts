@@ -73,7 +73,7 @@ async function sendDiscordWebhook(workInfoPruned: any) {
           text: 'ASMR Archive Data',
         },
         timestamp: DateTime.now().toISO(),
-        url: `${frontPageBaseUrl}/${workInfoPruned.create_date}/${stringUtils.numberToRJIdString(workInfoPruned.id)}`,
+        url: `${frontPageBaseUrl}/work?create_date=${workInfoPruned.create_date}&id=${workInfoPruned.id}`,
       },
     ],
     components: [],
