@@ -22,10 +22,20 @@ import retry from 'async-retry';
 import webhookUtils from './webhookUtils.js';
 import stringUtils from './stringUtils.js';
 
+const kyRetryConfig = { limit: 10, statusCodes: [408, 413, 429, 500, 502, 503, 504, 525] };
+
 async function healthCheck() {
   logger.debug('Checking API health ...');
   const apiDef = apiDefsModule.apiDefs.health();
-  const apiRsp = await apiConnectModule.apiConnect(apiDef.endpoint, apiDef.params);
+  const apiRsp = await ky(
+    stringUtils.pathQueryToUrl(apiDefsModule.apiDefs.health().endpoint, apiDefsModule.apiDefs.health().params),
+    {
+      method: 'get',
+      headers: { ...apiDefsModule.defaultApiConnectionHeader },
+      retry: kyRetryConfig,
+      timeout: 20000,
+    },
+  ).text();
   if (apiRsp === 'OK') {
     return true;
   } else {
@@ -55,7 +65,7 @@ async function singleDownload(workId: number) {
         {
           method: 'get',
           headers: { ...apiDefsModule.defaultApiConnectionHeader },
-          retry: 10,
+          retry: kyRetryConfig,
           timeout: 20000,
         },
       ).json();
@@ -69,7 +79,7 @@ async function singleDownload(workId: number) {
         {
           method: 'get',
           headers: { ...apiDefsModule.defaultApiConnectionHeader },
-          retry: 10,
+          retry: kyRetryConfig,
           timeout: 20000,
         },
       ).json();
@@ -272,7 +282,7 @@ async function singleDownload(workId: number) {
           {
             method: 'get',
             headers: { ...apiDefsModule.defaultApiConnectionHeader },
-            retry: 10,
+            retry: kyRetryConfig,
             timeout: 20000,
           },
         ).arrayBuffer();
@@ -298,7 +308,7 @@ async function singleDownload(workId: number) {
           {
             method: 'get',
             headers: { ...apiDefsModule.defaultApiConnectionHeader },
-            retry: 10,
+            retry: kyRetryConfig,
             timeout: 20000,
           },
         ).arrayBuffer();
@@ -324,7 +334,7 @@ async function singleDownload(workId: number) {
           {
             method: 'get',
             headers: { ...apiDefsModule.defaultApiConnectionHeader },
-            retry: 10,
+            retry: kyRetryConfig,
             timeout: 20000,
           },
         ).arrayBuffer();
