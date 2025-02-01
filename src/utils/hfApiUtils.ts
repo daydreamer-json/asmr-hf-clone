@@ -225,23 +225,9 @@ async function uploadStatsMetaToHf() {
         commitTitle: `Update stats meta`,
         files: [
           {
-            path: 'stats.json.zst',
+            path: 'stats_02.json.zst',
             content: new Blob(
-              [
-                await zstd.compress(
-                  Buffer.from(
-                    JSON.stringify(
-                      {
-                        repoSize: retRepoSize,
-                      },
-                      null,
-                      '  ',
-                    ),
-                    'utf-8',
-                  ),
-                  18,
-                ),
-              ],
+              [await zstd.compress(Buffer.from(JSON.stringify({ repoSize: retRepoSize }, null, '  '), 'utf-8'), 18)],
               {
                 type: 'application/zstd',
               },
