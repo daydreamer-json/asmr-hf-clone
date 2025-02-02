@@ -14,9 +14,11 @@ async function createTarBuffer(
   });
   tarPack.pipe(writable);
   for (const file of fileBufArray) {
+    // const uint8data = new Uint8Array(file.data);
     tarPack.entry(
       { name: file.path, mtime: file.modifiedTime === null ? new Date() : file.modifiedTime },
       Buffer.from(file.data),
+      // Buffer.from(uint8data),
     );
   }
   tarPack.finalize();

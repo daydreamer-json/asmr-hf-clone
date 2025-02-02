@@ -47,6 +47,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@tsconfig/node20": "^20.1.4",
+    "@tsconfig/node22": "^22.0.0",
     "@types/async-retry": "^1.4.9",
     "@types/clear": "^0.1.4",
     "@types/cli-progress": "^3.11.6",

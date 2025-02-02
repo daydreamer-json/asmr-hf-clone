@@ -81,6 +81,7 @@ async function uploadWorkFiles(
                       return chunkArrayFunc(appConfigDatabase.getConfig(), 4096).map((obj, index) => ({
                         path: `database.json.${index.toString().padStart(2, '0')}`,
                         data: Buffer.from(JSON.stringify(obj), 'utf-8'),
+                        // data: new TextEncoder().encode(JSON.stringify(obj), 'utf-8'),
                         modifiedTime: null,
                       }));
                     })(),
@@ -231,7 +232,7 @@ async function uploadStatsMetaToHf() {
               {
                 type: 'application/zstd',
               },
-            ),
+            ) as hfHubModule.ContentSource,
           },
         ],
       });

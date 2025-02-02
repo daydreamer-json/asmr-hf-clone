@@ -28,7 +28,9 @@ async function healthCheck() {
   logger.debug('Checking API health ...');
   const apiDef = apiDefsModule.apiDefs.health();
   const apiRsp = await ky(
-    stringUtils.pathQueryToUrl(apiDefsModule.apiDefs.health().endpoint, apiDefsModule.apiDefs.health().params),
+    stringUtils
+      .pathQueryToUrl(apiDefsModule.apiDefs.health().endpoint, apiDefsModule.apiDefs.health().params)
+      .toString(),
     {
       method: 'get',
       headers: { ...apiDefsModule.defaultApiConnectionHeader },
@@ -61,7 +63,7 @@ async function singleDownload(workId: number) {
     };
     try {
       apiRsp.workInfoPruned = await ky(
-        stringUtils.pathQueryToUrl(apiDef.workInfoPruned.endpoint, apiDef.workInfoPruned.params),
+        stringUtils.pathQueryToUrl(apiDef.workInfoPruned.endpoint, apiDef.workInfoPruned.params).toString(),
         {
           method: 'get',
           headers: { ...apiDefsModule.defaultApiConnectionHeader },
@@ -75,7 +77,7 @@ async function singleDownload(workId: number) {
     }
     try {
       apiRsp.workFolderStructure = await ky(
-        stringUtils.pathQueryToUrl(apiDef.workFolderStructure.endpoint, apiDef.workFolderStructure.params),
+        stringUtils.pathQueryToUrl(apiDef.workFolderStructure.endpoint, apiDef.workFolderStructure.params).toString(),
         {
           method: 'get',
           headers: { ...apiDefsModule.defaultApiConnectionHeader },
@@ -275,10 +277,12 @@ async function singleDownload(workId: number) {
       //! cover画像の取得をkyに置き換えているセクション。WIP
       try {
         coverRsp.main = await ky(
-          stringUtils.pathQueryToUrl(
-            apiDefsModule.apiDefs.coverImage(workId, 'main').endpoint,
-            apiDefsModule.apiDefs.coverImage(workId, 'main').params,
-          ),
+          stringUtils
+            .pathQueryToUrl(
+              apiDefsModule.apiDefs.coverImage(workId, 'main').endpoint,
+              apiDefsModule.apiDefs.coverImage(workId, 'main').params,
+            )
+            .toString(),
           {
             method: 'get',
             headers: { ...apiDefsModule.defaultApiConnectionHeader },
@@ -301,10 +305,12 @@ async function singleDownload(workId: number) {
       }
       try {
         coverRsp.small = await ky(
-          stringUtils.pathQueryToUrl(
-            apiDefsModule.apiDefs.coverImage(workId, '240x240').endpoint,
-            apiDefsModule.apiDefs.coverImage(workId, '240x240').params,
-          ),
+          stringUtils
+            .pathQueryToUrl(
+              apiDefsModule.apiDefs.coverImage(workId, '240x240').endpoint,
+              apiDefsModule.apiDefs.coverImage(workId, '240x240').params,
+            )
+            .toString(),
           {
             method: 'get',
             headers: { ...apiDefsModule.defaultApiConnectionHeader },
@@ -327,10 +333,12 @@ async function singleDownload(workId: number) {
       }
       try {
         coverRsp.thumb = await ky(
-          stringUtils.pathQueryToUrl(
-            apiDefsModule.apiDefs.coverImage(workId, 'sam').endpoint,
-            apiDefsModule.apiDefs.coverImage(workId, 'sam').params,
-          ),
+          stringUtils
+            .pathQueryToUrl(
+              apiDefsModule.apiDefs.coverImage(workId, 'sam').endpoint,
+              apiDefsModule.apiDefs.coverImage(workId, 'sam').params,
+            )
+            .toString(),
           {
             method: 'get',
             headers: { ...apiDefsModule.defaultApiConnectionHeader },
