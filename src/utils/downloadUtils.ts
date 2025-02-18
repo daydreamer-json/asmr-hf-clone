@@ -47,6 +47,10 @@ async function healthCheck() {
 
 async function singleDownload(workId: number) {
   await new Promise<void>(async (resolve) => {
+    if (appConfigDatabase.getConfig().filter((el) => el.workInfoPruned.id === workId).length > 0) {
+      logger.warn(`Already downloaded. Skipping: ${workId}`);
+      return resolve();
+    }
     await healthCheck();
     logger.info('Downloading work:', workId, '...');
     const apiDef = {
